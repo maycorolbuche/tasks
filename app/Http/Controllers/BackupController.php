@@ -97,7 +97,7 @@ class BackupController extends Controller
 
             $log[] = log("");
             $datetime = date("Y-m-d_H-i-s");
-            $dir_host = rep_dir(env("BACKUP_DB_DIR") . "/{$db['host']}");
+            $dir_host = rep_dir(env("BACKUP_DB_DIR") . "/{$title}");
             $dir = rep_dir("{$dir_host}/{$datetime}");
             if (!is_dir($dir)) {
                 mkdir($dir, 0777, true);
@@ -202,7 +202,7 @@ class BackupController extends Controller
         // Crie um objeto Request com os dados necessários para enviar o e-mail
         $request = new Request([
             'to' => 'mayco_rolbuche@hotmail.com',
-            'subject' => 'Logs de Backup - ' . $conn_keys . ' ' . ($errors > 0 ? " [Erro]" : ""),
+            'subject' => ($errors > 0 ? " [❌ Erro] " : "") . 'Logs de Backup - ' . $conn_keys,
             'message' => $message,
         ]);
 
