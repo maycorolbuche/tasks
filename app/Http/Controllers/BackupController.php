@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Ifsnop\Mysqldump\Mysqldump;
 use App\Http\Controllers\EmailController;
+use ZipArchive;
 
 class BackupController extends Controller
 {
@@ -51,6 +52,25 @@ class BackupController extends Controller
             }
 
             rmdir($dirPath);
+        }
+        function zipFile($file, $file_zip)
+        {
+            $files = [$file];
+
+            $zip = new ZipArchive();
+
+            if ($zip->open($file_zip, ZipArchive::CREATE) === TRUE) {
+                foreach ($files as $file) {
+                    $file_name = basename($file); // Use o nome do arquivo original como nome dentro do ZIP
+                    $zip->addFile($file, $file_name);
+                }
+
+                $zip->close();
+                return response()->download($file_zip)->deleteFileAfterSend(true);
+                return true;
+            } else {
+                return false;
+            }
         }
 
         $errors = 0;
@@ -128,6 +148,20 @@ class BackupController extends Controller
                     $dump = new Mysqldump("mysql:host={$host};dbname={$database}", $user, $password);
                     $dump->start($backupPath);
                     $log[] = log("✔️ Backup gerado com sucesso", $dir);
+
+                    $info = pathinfo($backupPath);
+                    $file_zip = $info['dirname'] . '/' . $info['filename'] . '.zip';
+
+                    $log[] = log("Compactando arquivo em: " . $file_zip, $dir);
+                    $zip = zipFile($backupPath, $file_zip);
+                    if ($zip <> true) {
+                        $log[] = log("❌ Erro ao compactar arquivo", $dir);
+                    } else {
+                        $log[] = log("✔️ Arquivo compactado com sucesso", $dir);
+                        if (file_exists($backupPath)) {
+                            unlink($backupPath);
+                        }
+                    }
                 } catch (\Exception $e) {
                     $log[] = log("❌ Erro ao fazer backup: " . $e->getMessage(), $dir);
                     $local_errors++;
