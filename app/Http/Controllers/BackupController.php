@@ -14,7 +14,7 @@ class BackupController extends Controller
         set_time_limit(60 * 5); // 5 minutos
     }
 
-    public function databases($conn = '', Request $request)
+    public function databases(Request $request, $conn = '')
     {
         function log($message, $dir = "")
         {
