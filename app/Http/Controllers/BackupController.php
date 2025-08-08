@@ -11,7 +11,8 @@ class BackupController extends Controller
 {
     public function __construct()
     {
-        set_time_limit(60 * 5); // 5 minutos
+        set_time_limit(60 * 15); // 15 minutos
+        ini_set('memory_limit', '1024M');
     }
 
     public function databases(Request $request, $conn = '')
