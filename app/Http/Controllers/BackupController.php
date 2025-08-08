@@ -115,6 +115,9 @@ class BackupController extends Controller
                 }
             }
 
+            $db["include-tables"] = $this->toDBTables($connection['include-tables'] ?? "");
+            $db["exclude-tables"] = $this->toDBTables($connection['exclude-tables'] ?? "");
+
             $log[] = log("");
             $datetime = date("Y-m-d_H-i-s");
             $dir_host = rep_dir(env("BACKUP_DB_DIR") . "/{$title}");
@@ -144,29 +147,54 @@ class BackupController extends Controller
                 $log[] = log("➡️ Database: " . $database);
                 $log[] = log("Gerando backup em: " . $backupPath, $dir);
 
-                try {
-                    $dump = new Mysqldump("mysql:host={$host};dbname={$database}", $user, $password);
-                    $dump->start($backupPath);
-                    $log[] = log("✔️ Backup gerado com sucesso", $dir);
+                //try {
+                $data = array();
+                $data["include-tables"] = array();
+                $data["exclude-tables"] = array();
 
-                    $info = pathinfo($backupPath);
-                    $file_zip = $info['dirname'] . '/' . $info['filename'] . '.zip';
+                if (isset($db["include-tables"]["*"]) && count($db["include-tables"]["*"]) > 0) {
+                    $data["include-tables"] = array_merge($data["include-tables"], $db["include-tables"]["*"]);
+                }
+                if (isset($db["include-tables"][$database]) && count($db["include-tables"][$database]) > 0) {
+                    $data["include-tables"] = array_merge($data["include-tables"], $db["include-tables"][$database]);
+                }
 
-                    $log[] = log("Compactando arquivo em: " . $file_zip, $dir);
-                    $zip = zipFile($backupPath, $file_zip);
-                    if ($zip <> true) {
-                        $log[] = log("❌ Erro ao compactar arquivo", $dir);
-                    } else {
-                        $log[] = log("✔️ Arquivo compactado com sucesso", $dir);
-                        if (file_exists($backupPath)) {
-                            unlink($backupPath);
-                        }
+                if (isset($db["exclude-tables"]["*"]) && count($db["exclude-tables"]["*"]) > 0) {
+                    $data["exclude-tables"] = array_merge($data["exclude-tables"], $db["exclude-tables"]["*"]);
+                }
+                if (isset($db["exclude-tables"][$database]) && count($db["exclude-tables"][$database]) > 0) {
+                    $data["exclude-tables"] = array_merge($data["exclude-tables"], $db["exclude-tables"][$database]);
+                }
+
+                if (count($data["include-tables"]) <= 0) {
+                    unset($data["include-tables"]);
+                }
+                if (count($data["exclude-tables"]) <= 0) {
+                    unset($data["exclude-tables"]);
+                }
+
+                $dump = new Mysqldump("mysql:host={$host};dbname={$database}", $user, $password, $data);
+                $dump->start($backupPath);
+                $log[] = log("✔️ Backup gerado com sucesso", $dir);
+
+                $info = pathinfo($backupPath);
+                $file_zip = $info['dirname'] . '/' . $info['filename'] . '.zip';
+
+                $log[] = log("Compactando arquivo em: " . $file_zip, $dir);
+                $zip = zipFile($backupPath, $file_zip);
+                if ($zip <> true) {
+                    $log[] = log("❌ Erro ao compactar arquivo", $dir);
+                } else {
+                    $log[] = log("✔️ Arquivo compactado com sucesso", $dir);
+                    if (file_exists($backupPath)) {
+                        unlink($backupPath);
                     }
-                } catch (\Exception $e) {
+                }
+                /*  } catch (\Exception $e) {
                     $log[] = log("❌ Erro ao fazer backup: " . $e->getMessage(), $dir);
                     $local_errors++;
                     $errors++;
-                }
+                }*/
             }
 
             if ($local_errors <= 0) {
@@ -251,5 +279,36 @@ class BackupController extends Controller
             // Ocorreu um erro ao enviar o e-mail
             return response()->json(['error' => 'Erro ao enviar o e-mail'], $response->getStatusCode());
         }
+    }
+
+    private function toDBTables($data)
+    {
+        $tables = array();
+        if (is_string($data)) {
+            $tables = explode(",", $data);
+        } else {
+            $tables = $data;
+        }
+
+        $db = array();
+        foreach ($tables as $table) {
+            $name = explode(".", $table);
+
+            if (count($name) <= 1) {
+                $db_name = "*";
+                $table_name = $name[0];
+            } else {
+                $db_name = $name[0];
+                $table_name = $name[1];
+            }
+
+            if (!isset($db[$db_name])) {
+                $db[$db_name] = array();
+            }
+            if ($table_name <> "") {
+                $db[$db_name][] = $table_name;
+            }
+        }
+        return $db;
     }
 }
