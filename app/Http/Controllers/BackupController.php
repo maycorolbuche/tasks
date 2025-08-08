@@ -178,7 +178,7 @@ class BackupController extends Controller
                 }
 
                 $cmd = "mysql:host={$host};dbname={$database}";
-                $log[] = "<code>" . log("$cmd") . "</code>";
+                $log[] = log("💻 $cmd");
 
                 try {
                     $dump = new Mysqldump($cmd, $user, $password, $data);
