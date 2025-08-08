@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Ifsnop\Mysqldump\Mysqldump;
 use App\Http\Controllers\EmailController;
-use ZipArchive;
+//use ZipArchive;
 
 class BackupController extends Controller
 {
@@ -54,7 +54,7 @@ class BackupController extends Controller
 
             rmdir($dirPath);
         }
-        function zipFile($file, $file_zip)
+        /*function zipFile($file, $file_zip)
         {
             $files = [$file];
 
@@ -72,7 +72,7 @@ class BackupController extends Controller
             } else {
                 return false;
             }
-        }
+        }*/
 
         $errors = 0;
         $log = [];
@@ -137,7 +137,7 @@ class BackupController extends Controller
                 $database = $db['database'];
 
 
-                $backupPath = rep_dir("{$dir}/{$database}.sql");
+                $backupPath = rep_dir("{$dir}/{$database}.sql.gz");
 
                 $backupDirectory = dirname($backupPath);
                 if (!is_dir($backupDirectory)) {
@@ -155,6 +155,7 @@ class BackupController extends Controller
 
                 $data['single-transaction'] = false;
                 $data['net_buffer_length'] = 16384;
+                $data['compress'] = Mysqldump::GZIP;
 
                 if (isset($db["include-tables"]["*"]) && count($db["include-tables"]["*"]) > 0) {
                     $data["include-tables"] = array_merge($data["include-tables"], $db["include-tables"]["*"]);
@@ -184,7 +185,7 @@ class BackupController extends Controller
                     $dump = new Mysqldump($cmd, $user, $password, $data);
                     $dump->start($backupPath);
                     $log[] = log("✔️ Backup gerado com sucesso", $dir);
-
+                    /*
                     $info = pathinfo($backupPath);
                     $file_zip = $info['dirname'] . '/' . $info['filename'] . '.zip';
 
@@ -197,7 +198,7 @@ class BackupController extends Controller
                         if (file_exists($backupPath)) {
                             unlink($backupPath);
                         }
-                    }
+                    }*/
                 } catch (\Exception $e) {
                     $log[] = log("❌ Erro ao fazer backup: " . $e->getMessage(), $dir);
                     $local_errors++;
