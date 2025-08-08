@@ -255,7 +255,7 @@ class BackupController extends Controller
         $log[] = log("");
         $log[] = log(($errors > 0 ? "🔴" : "🟢") . " Rotina processada com sucesso");
 
-        $this->enviarEmail($connections, "<pre>$log</pre>", $errors);
+        $this->enviarEmail($connections, $log, $errors);
 
         return response()->json($log);
     }
@@ -268,6 +268,7 @@ class BackupController extends Controller
 
         $conn_keys = implode(', ', array_keys($connections));
         $message = implode('<br>', $log);
+        $message = "<pre>$message</pre>";
 
         // Crie um objeto Request com os dados necessários para enviar o e-mail
         $request = new Request([
