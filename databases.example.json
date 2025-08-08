@@ -1,0 +1,34 @@
+{
+    "DB1": {
+        "host": "localhost",
+        "user": "user01",
+        "password": "pwd01",
+        "databases": [
+            "db01",
+            "db02"
+        ],
+        "qt": 2,
+        "exclude-tables": [
+            "table001",
+            "table002"
+        ]
+    },
+    "DB2": {
+        "host": "localhost",
+        "user": "user02",
+        "password": "pwd02",
+        "database": "db01",
+        "qt": 5,
+        "include-tables": [
+            "table001",
+            "table002"
+        ]
+    },
+    "DB3": {
+        "host": "localhost",
+        "user": "user03",
+        "password": "pwd03",
+        "database": "db001",
+        "qt": 2
+    }
+}
