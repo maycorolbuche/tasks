@@ -148,36 +148,40 @@ class BackupController extends Controller
                 $log[] = log("➡️ Database: " . $database);
                 $log[] = log("Gerando backup em: " . $backupPath, $dir);
 
+
+                $data = array();
+                $data["include-tables"] = array();
+                $data["exclude-tables"] = array();
+
+                $data['single-transaction'] = false;
+                $data['net_buffer_length'] = 16384;
+
+                if (isset($db["include-tables"]["*"]) && count($db["include-tables"]["*"]) > 0) {
+                    $data["include-tables"] = array_merge($data["include-tables"], $db["include-tables"]["*"]);
+                }
+                if (isset($db["include-tables"][$database]) && count($db["include-tables"][$database]) > 0) {
+                    $data["include-tables"] = array_merge($data["include-tables"], $db["include-tables"][$database]);
+                }
+
+                if (isset($db["exclude-tables"]["*"]) && count($db["exclude-tables"]["*"]) > 0) {
+                    $data["exclude-tables"] = array_merge($data["exclude-tables"], $db["exclude-tables"]["*"]);
+                }
+                if (isset($db["exclude-tables"][$database]) && count($db["exclude-tables"][$database]) > 0) {
+                    $data["exclude-tables"] = array_merge($data["exclude-tables"], $db["exclude-tables"][$database]);
+                }
+
+                if (count($data["include-tables"]) <= 0) {
+                    unset($data["include-tables"]);
+                }
+                if (count($data["exclude-tables"]) <= 0) {
+                    unset($data["exclude-tables"]);
+                }
+
+                $cmd = "mysql:host={$host};dbname={$database}";
+                $log[] = "<code>" . log("$cmd") . "</code>";
+
                 try {
-                    $data = array();
-                    $data["include-tables"] = array();
-                    $data["exclude-tables"] = array();
-
-                    $data['single-transaction'] = false;
-                    $data['net_buffer_length'] = 16384;
-
-                    if (isset($db["include-tables"]["*"]) && count($db["include-tables"]["*"]) > 0) {
-                        $data["include-tables"] = array_merge($data["include-tables"], $db["include-tables"]["*"]);
-                    }
-                    if (isset($db["include-tables"][$database]) && count($db["include-tables"][$database]) > 0) {
-                        $data["include-tables"] = array_merge($data["include-tables"], $db["include-tables"][$database]);
-                    }
-
-                    if (isset($db["exclude-tables"]["*"]) && count($db["exclude-tables"]["*"]) > 0) {
-                        $data["exclude-tables"] = array_merge($data["exclude-tables"], $db["exclude-tables"]["*"]);
-                    }
-                    if (isset($db["exclude-tables"][$database]) && count($db["exclude-tables"][$database]) > 0) {
-                        $data["exclude-tables"] = array_merge($data["exclude-tables"], $db["exclude-tables"][$database]);
-                    }
-
-                    if (count($data["include-tables"]) <= 0) {
-                        unset($data["include-tables"]);
-                    }
-                    if (count($data["exclude-tables"]) <= 0) {
-                        unset($data["exclude-tables"]);
-                    }
-
-                    $dump = new Mysqldump("mysql:host={$host};dbname={$database}", $user, $password, $data);
+                    $dump = new Mysqldump($cmd, $user, $password, $data);
                     $dump->start($backupPath);
                     $log[] = log("✔️ Backup gerado com sucesso", $dir);
 
@@ -251,7 +255,7 @@ class BackupController extends Controller
         $log[] = log("");
         $log[] = log(($errors > 0 ? "🔴" : "🟢") . " Rotina processada com sucesso");
 
-        $this->enviarEmail($connections, $log, $errors);
+        $this->enviarEmail($connections, "<pre>$log</pre>", $errors);
 
         return response()->json($log);
     }
