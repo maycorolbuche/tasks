@@ -123,8 +123,9 @@ $logger->sendImmediate("🚀 *Iniciando backup: {$params['task']}*");
 // Executa a tarefa baseada no tipo
 $startTime = microtime(true);
 $backupInfo = null;
-
+$logger->sendImmediate("🚀 *exe0*");
 try {
+    $logger->sendImmediate("🚀 *exe1*");
     $result = executeTask($params['task'], $taskConfig);
     $logger->sendImmediate("🚀 *excutad1*");
     $executionTime = round(microtime(true) - $startTime, 2);
