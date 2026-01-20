@@ -18,19 +18,6 @@ Ele foi pensado para ser leve, sem frameworks, fácil de rodar em servidores Lin
 
 ---
 
-## 📁 Estrutura do Projeto
-
-```
-/
-├── tasks.php                # Arquivo principal (executável)
-├── functions.php            # Funções auxiliares
-├── check_requirements.php   # Verificação de dependências
-├── config.json              # Configuração das tarefas e logs
-└── backups/                 # (Gerado automaticamente)
-```
-
----
-
 ## ✅ Requisitos
 
 - **PHP 8.0+**
@@ -183,10 +170,3 @@ Se configurado, o sistema envia:
 Uso livre para projetos pessoais ou corporativos.
 
 ---
-
-Se quiser, posso:
-- Ajustar o README para **open source**
-- Criar um **install.sh**
-- Adicionar exemplos de **criptografia de senha**
-- Documentar novas tarefas
-
