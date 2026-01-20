@@ -125,6 +125,7 @@ $startTime = microtime(true);
 $backupInfo = null;
 $logger->sendImmediate("🚀 *exe0*");
 $logger->sendSuccess($params['task'], "10:10", "testre");
+$logger->sendError($params['task'], "Erro desconhecido na execução");
 try {
     $logger->sendImmediate("🚀 *exe1*");
     $result = executeTask($params['task'], $taskConfig);
@@ -136,6 +137,7 @@ try {
     $logger->sendImmediate("🚀 *excutad3*");
 
     if ($result) {
+        $logger->sendImmediate("🚀 *excutad4*");
         // Se temos informações do backup
         if (is_array($result) && isset($result['backup_file'])) {
             $backupInfo = basename($result['backup_file']);
@@ -143,13 +145,14 @@ try {
                 $backupInfo .= " (" . formatBytes($result['file_size']) . ")";
             }
         }
-
+        $logger->sendImmediate("🚀 *excutad5*");
         // Envia mensagem de sucesso para o Telegram
         $logger->sendSuccess($params['task'], $executionTime, $backupInfo);
 
         echo "\n✅ Tarefa '{$params['task']}' executada com sucesso em {$executionTime}s!\n";
         exit(0);
     } else {
+        $logger->sendImmediate("🚀 *excutadE*");
         // Envia mensagem de erro para o Telegram
         $logger->sendError($params['task'], "Erro desconhecido na execução");
 
