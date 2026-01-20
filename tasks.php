@@ -141,16 +141,20 @@ try {
         // Se temos informações do backup
         if (is_array($result) && isset($result['backup_file'])) {
             $backupInfo = basename($result['backup_file']);
+            $logger->sendImmediate("🚀 *excutad5BInfoA*");
+            $logger->sendImmediate("🚀 *excutad5BInfo* " . $backupInfo);
             if (isset($result['file_size'])) {
                 $backupInfo .= " (" . formatBytes($result['file_size']) . ")";
+                $logger->sendImmediate("🚀 *excutad5BInfoB*");
+                $logger->sendImmediate("🚀 *excutad5BInfoB* " . $backupInfo);
             }
         }
         $logger->sendImmediate("🚀 *excutad5*");
         // Envia mensagem de sucesso para o Telegram
         $logger->sendSuccess($params['task'], $executionTime, $backupInfo);
         $logger->sendImmediate("🚀 *excutad6*");
-        $logger->sendImmediate("🚀 *excutad6*A" . $executionTime);
-        $logger->sendImmediate("🚀 *excutad6*B" . $backupInfo);
+        $logger->sendImmediate("🚀 *excutad6*A " . $executionTime);
+        $logger->sendImmediate("🚀 *excutad6*B " . $backupInfo);
 
         echo "\n✅ Tarefa '{$params['task']}' executada com sucesso em {$executionTime}s!\n";
         exit(0);
