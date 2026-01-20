@@ -137,7 +137,7 @@ try {
     $logger->sendImmediate("🚀 *excutad3*");
 
     if ($result) {
-        $logger->sendImmediate("🚀 *excutad4*  " . json_encode($result));
+        $logger->sendImmediate("🚀 *excutad4*  " . ($result['backup_file'] ?? "xx"));
         // Se temos informações do backup
         if (is_array($result) && isset($result['backup_file'])) {
             $backupInfo = basename($result['backup_file']);
