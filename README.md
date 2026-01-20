@@ -80,7 +80,7 @@ Toda a configuração do sistema fica no arquivo **`config.json`**.
 
 O sistema suporta senhas criptografadas no formato:
 
-```
+```text
 enc:CONTEUDO_CRIPTOGRAFADO:IV_BASE64
 ```
 
