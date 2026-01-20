@@ -1,24 +1,192 @@
-# Lumen PHP Framework
+# Sistema de Tarefas e Backup de Banco de Dados (PHP)
 
-[![Build Status](https://travis-ci.org/laravel/lumen-framework.svg)](https://travis-ci.org/laravel/lumen-framework)
-[![Total Downloads](https://img.shields.io/packagist/dt/laravel/framework)](https://packagist.org/packages/laravel/lumen-framework)
-[![Latest Stable Version](https://img.shields.io/packagist/v/laravel/framework)](https://packagist.org/packages/laravel/lumen-framework)
-[![License](https://img.shields.io/packagist/l/laravel/framework)](https://packagist.org/packages/laravel/lumen-framework)
+Este projeto é um **sistema simples de tarefas em PHP via linha de comando**, com foco principal em **backup de bancos de dados MySQL/MariaDB**, controle de retenção e **envio de logs via Telegram**.
 
-Laravel Lumen is a stunningly fast PHP micro-framework for building web applications with expressive, elegant syntax. We believe development must be an enjoyable, creative experience to be truly fulfilling. Lumen attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as routing, database abstraction, queueing, and caching.
+Ele foi pensado para ser leve, sem frameworks, fácil de rodar em servidores Linux ou Windows, e simples de automatizar via **cron** ou **Agendador de Tarefas**.
 
-## Official Documentation
+---
 
-Documentation for the framework can be found on the [Lumen website](https://lumen.laravel.com/docs).
+## 📌 Funcionalidades
 
-## Contributing
+- Execução de tarefas via **CLI (linha de comando)**
+- Backup de banco de dados MySQL/MariaDB usando `mysqldump`
+- Suporte a **múltiplos ambientes** (ex: teste, produção)
+- Controle de retenção de backups
+- Senhas **criptografadas** no arquivo de configuração
+- Envio de logs e alertas via **Telegram**
+- Verificação automática de requisitos do sistema
 
-Thank you for considering contributing to Lumen! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Security Vulnerabilities
+## 📁 Estrutura do Projeto
 
-If you discover a security vulnerability within Lumen, please send an e-mail to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
+```
+/
+├── tasks.php                # Arquivo principal (executável)
+├── functions.php            # Funções auxiliares
+├── check_requirements.php   # Verificação de dependências
+├── config.json              # Configuração das tarefas e logs
+└── backups/                 # (Gerado automaticamente)
+```
 
-## License
+---
 
-The Lumen framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## ✅ Requisitos
+
+- **PHP 8.0+**
+- Extensões PHP:
+  - `json`
+  - `openssl`
+- Utilitários do sistema:
+  - `mysqldump`
+- Acesso via terminal (CLI)
+
+Para validar automaticamente, execute:
+
+```bash
+php check_requirements.php
+```
+
+---
+
+## ⚙️ Configuração
+
+Toda a configuração do sistema fica no arquivo **`config.json`**.
+
+### Exemplo de configuração
+
+```json
+{
+  "tasks": {
+    "db.teste": {
+      "task": "backup.database",
+      "host": "localhost",
+      "database": "meu_banco",
+      "username": "root",
+      "password": "root",
+      "retention_days": 7,
+      "min_backups": 3
+    }
+  },
+  "logs": {
+    "send": "telegram",
+    "bot_token": "SEU_TOKEN",
+    "chat_id": "SEU_CHAT_ID"
+  }
+}
+```
+
+### 🔹 Parâmetros da tarefa `backup.database`
+
+| Parâmetro | Descrição |
+|---------|----------|
+| `host` | Host do banco de dados |
+| `database` | Nome do banco |
+| `username` | Usuário do banco |
+| `password` | Senha (pode ser criptografada) |
+| `retention_days` | Dias para manter backups antigos |
+| `min_backups` | Quantidade mínima de backups |
+
+---
+
+## 🔐 Criptografando Senhas
+
+O sistema suporta senhas criptografadas no formato:
+
+```
+enc:CONTEUDO_CRIPTOGRAFADO:IV_BASE64
+```
+
+> Isso evita armazenar senhas em texto puro no `config.json`.
+
+A lógica de descriptografia é feita automaticamente pelo sistema durante a execução.
+
+---
+
+## ▶️ Como Executar
+
+### Executar uma tarefa específica
+
+```bash
+php tasks.php --task=db.teste
+```
+
+### Executar todas as tarefas configuradas
+
+```bash
+php tasks.php
+```
+
+### Exemplo de saída
+
+```
+[OK] Backup realizado com sucesso
+[INFO] Arquivo salvo em /backups/db.teste/2026-01-20.sql.gz
+```
+
+---
+
+## 📬 Logs via Telegram
+
+Se configurado, o sistema envia:
+
+- Sucesso na execução
+- Erros de backup
+- Falhas de configuração
+
+### Como obter os dados
+
+1. Crie um bot no **@BotFather**
+2. Copie o `bot_token`
+3. Pegue o `chat_id` do grupo ou usuário
+4. Configure no `config.json`
+
+---
+
+## ⏱️ Automatização (Cron)
+
+### Linux (cron)
+
+```bash
+0 2 * * * /usr/bin/php /caminho/tasks.php --task=db.producao
+```
+
+### Windows (Agendador de Tarefas)
+
+- Programa: `php.exe`
+- Argumentos: `tasks.php --task=db.producao`
+- Iniciar em: pasta do projeto
+
+---
+
+## 🛡️ Boas Práticas de Segurança
+
+- Nunca versionar o `config.json` com credenciais reais
+- Use permissões restritas na pasta `backups/`
+- Prefira senhas criptografadas
+- Use usuários de banco apenas com permissão de **leitura**
+
+---
+
+## 🚀 Extensões Futuras (Sugestões)
+
+- Backup incremental
+- Upload para S3 / FTP
+- Suporte a PostgreSQL
+- Logs em arquivo
+- Modo dry-run
+
+---
+
+## 📄 Licença
+
+Uso livre para projetos pessoais ou corporativos.
+
+---
+
+Se quiser, posso:
+- Ajustar o README para **open source**
+- Criar um **install.sh**
+- Adicionar exemplos de **criptografia de senha**
+- Documentar novas tarefas
+

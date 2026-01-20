@@ -1,6 +1,40 @@
-/vendor
-/.idea
-Homestead.json
-Homestead.yaml
-.env
-.phpunit.result.cache
+# Configurações
+/config.json
+/config.local.json
+
+# Backups
+/backups/
+!/backups/.gitkeep
+
+# Logs
+/logs/
+!/logs/.gitkeep
+
+# Ambiente
+/.env
+/.env.local
+/.env.*.local
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+/.vscode/
+/.idea/
+*.swp
+*.swo
+
+# PHP
+/vendor/
+composer.lock
+*.phar
+
+# Cache
+/tmp/
+/cache/
+
+# Segurança
+*.pem
+*.key
+*.crt

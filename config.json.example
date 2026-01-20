@@ -1,0 +1,44 @@
+{
+    "tasks": {
+        "db.exemplo": {
+            "task": "backup.database",
+            "host": "localhost",
+            "database": "nome_do_banco",
+            "username": "usuario",
+            "password": "senha_segura",
+            "retention_days": 30,
+            "min_backups": 5,
+            "port": 3306,
+            "charset": "utf8mb4"
+        },
+        "db.producao": {
+            "task": "backup.database",
+            "host": "db.producao.com",
+            "database": "banco_producao",
+            "username": "backup_user",
+            "password": "enc:U2FsdGVkX1/...:base64_iv==",
+            "retention_days": 90,
+            "min_backups": 10,
+            "port": 3306
+        },
+        "arquivos.sistema": {
+            "task": "backup.files",
+            "source": "/var/www/html",
+            "destination": "/backups/arquivos",
+            "exclude": [
+                "node_modules",
+                "vendor",
+                ".git"
+            ],
+            "retention_days": 30
+        }
+    },
+    "logs": {
+        "enabled": true,
+        "send": "telegram",
+        "bot_token": "SEU_BOT_TOKEN_AQUI:PARTE_SECRETA_DO_TOKEN",
+        "chat_id": "-1000000000000",
+        "level": "INFO",
+        "log_file": "logs/tasks.log"
+    }
+}
