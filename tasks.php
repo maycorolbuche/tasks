@@ -123,40 +123,26 @@ $logger->sendImmediate("🚀 *Iniciando backup: {$params['task']}*");
 // Executa a tarefa baseada no tipo
 $startTime = microtime(true);
 $backupInfo = null;
-$logger->sendImmediate("🚀 *exe0*");
-$logger->sendSuccess($params['task'], "10:10", "testre");
-$logger->sendError($params['task'], "Erro desconhecido na execução");
+
 try {
-    $logger->sendImmediate("🚀 *exe1*");
     $result = executeTask($params['task'], $taskConfig);
-    $logger->sendImmediate("🚀 *excutad1*");
     $executionTime = round(microtime(true) - $startTime, 2);
-    $logger->sendImmediate("🚀 *excutad2*");
+
     // Envia todas as mensagens pendentes
     $logger->flushBuffer();
-    $logger->sendImmediate("🚀 *excutad3*");
 
     file_put_contents("teste.txt", json_encode($result));
 
     if ($result) {
-        $logger->sendImmediate("🚀 *excutad4*  " . ($result['backup_file'] ?? "xx"));
         // Se temos informações do backup
         if (is_array($result) && isset($result['backup_file'])) {
             $backupInfo = basename($result['backup_file']);
-            $logger->sendImmediate("🚀 *excutad5BInfoA*");
-            $logger->sendImmediate("🚀 *excutad5BInfo* " . $backupInfo);
             if (isset($result['file_size'])) {
                 $backupInfo .= " (" . formatBytes($result['file_size']) . ")";
-                $logger->sendImmediate("🚀 *excutad5BInfoB*");
-                $logger->sendImmediate("🚀 *excutad5BInfoB* " . $backupInfo);
             }
         }
-        $logger->sendImmediate("🚀 *excutad5*");
         // Envia mensagem de sucesso para o Telegram
-        $logger->sendSuccess($params['task'], $executionTime, $backupInfo);
-        $logger->sendImmediate("🚀 *excutad6*");
-        $logger->sendImmediate("🚀 *excutad6*A " . $executionTime);
-        $logger->sendImmediate("🚀 *excutad6*B " . $backupInfo);
+        $logger->sendSuccess($params['task'], $executionTime);
 
         echo "\n✅ Tarefa '{$params['task']}' executada com sucesso em {$executionTime}s!\n";
         exit(0);
