@@ -148,6 +148,9 @@ try {
         $logger->sendImmediate("🚀 *excutad5*");
         // Envia mensagem de sucesso para o Telegram
         $logger->sendSuccess($params['task'], $executionTime, $backupInfo);
+        $logger->sendImmediate("🚀 *excutad6*");
+        $logger->sendImmediate("🚀 *excutad6*A" . $executionTime);
+        $logger->sendImmediate("🚀 *excutad6*B" . $backupInfo);
 
         echo "\n✅ Tarefa '{$params['task']}' executada com sucesso em {$executionTime}s!\n";
         exit(0);
