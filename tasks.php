@@ -126,8 +126,9 @@ $backupInfo = null;
 
 try {
     $result = executeTask($params['task'], $taskConfig);
+    $logger->sendImmediate("🚀 *excutad1*");
     $executionTime = round(microtime(true) - $startTime, 2);
-
+    $logger->sendImmediate("🚀 *excutad2*");
     // Envia todas as mensagens pendentes
     $logger->flushBuffer();
 
