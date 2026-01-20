@@ -240,21 +240,6 @@ class Logger
         }
     }
 
-    /**
-     * Envia mensagem imediatamente para o Telegram
-     */
-    public function sendImmediate($message)
-    {
-        $timestamp = date('Y-m-d H:i:s');
-        $formattedMessage = "[{$timestamp}] {$message}";
-
-        echo $formattedMessage . "\n";
-        $this->saveToFile($formattedMessage);
-
-        if ($this->telegramEnabled) {
-            $this->sendToTelegram($formattedMessage);
-        }
-    }
 
     /**
      * Envia todas as mensagens pendentes para o Telegram
@@ -277,6 +262,22 @@ class Logger
 
         $this->sendToTelegram($messageText);
         $this->messageBuffer = [];
+    }
+
+    /**
+     * Envia mensagem imediatamente para o Telegram
+     */
+    public function sendImmediate($message)
+    {
+        $timestamp = date('Y-m-d H:i:s');
+        $formattedMessage = "[{$timestamp}] {$message}";
+
+        echo $formattedMessage . "\n";
+        $this->saveToFile($formattedMessage);
+
+        if ($this->telegramEnabled) {
+            $this->sendToTelegram($formattedMessage);
+        }
     }
 
     /**
