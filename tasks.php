@@ -133,6 +133,7 @@ try {
     $logger->sendImmediate("🚀 *excutad2*");
     // Envia todas as mensagens pendentes
     $logger->flushBuffer();
+    $logger->sendImmediate("🚀 *excutad3*");
 
     if ($result) {
         // Se temos informações do backup
