@@ -136,7 +136,7 @@ try {
     $logger->flushBuffer();
     $logger->sendImmediate("🚀 *excutad3*");
 
-    file_put_contents("teste.txt", $result);
+    file_put_contents("teste.txt", json_encode($result));
 
     if ($result) {
         $logger->sendImmediate("🚀 *excutad4*  " . ($result['backup_file'] ?? "xx"));
