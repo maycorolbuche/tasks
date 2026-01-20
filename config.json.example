@@ -9,7 +9,20 @@
             "retention_days": 30,
             "min_backups": 5,
             "port": 3306,
-            "charset": "utf8mb4"
+            "charset": "utf8mb4",
+            "backup_options": {
+                "routines": true,
+                "triggers": true,
+                "events": true,
+                "single_transaction": true,
+                "hex_blob": true,
+                "complete_insert": true,
+                "lock_tables": false,
+                "add_drop_table": true,
+                "add_locks": true,
+                "comments": true,
+                "create_options": true
+            }
         },
         "db.producao": {
             "task": "backup.database",

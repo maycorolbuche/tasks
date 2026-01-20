@@ -108,20 +108,150 @@ function executeDatabaseBackup($taskName, $config)
         $backupFile = $backupDir . '/' . $safeDbName . '_' . $timestamp . '.sql';
     }
 
-    // Monta o comando mysqldump com opções seguras
-    $command = sprintf(
-        '%s --host=%s --user=%s --password=%s --single-transaction --routines --triggers --events --complete-insert --hex-blob %s',
-        escapeshellarg($mysqldumpPath),
+    // Monta o comando mysqldump baseado nas opções configuradas
+    $command = $mysqldumpPath;
+
+    // Opções básicas obrigatórias
+    $command .= sprintf(
+        ' --host=%s --user=%s --password=%s',
         escapeshellarg($config['host']),
         escapeshellarg($config['username']),
-        escapeshellarg($password),
-        escapeshellarg($config['database'])
+        escapeshellarg($password)
     );
+
+    // Porta (se especificada)
+    if (isset($config['port']) && !empty($config['port'])) {
+        $command .= ' --port=' . escapeshellarg($config['port']);
+    }
+
+    // Conjunto de caracteres (se especificado)
+    if (isset($config['charset']) && !empty($config['charset'])) {
+        $command .= ' --default-character-set=' . escapeshellarg($config['charset']);
+    }
+
+    // Opções de backup configuráveis
+    $backupOptions = isset($config['backup_options']) ? $config['backup_options'] : [];
+
+    // Valores padrão para as opções
+    $defaultOptions = [
+        'single_transaction' => true,
+        'routines' => true,
+        'triggers' => true,
+        'events' => true,
+        'hex_blob' => true,
+        'complete_insert' => false,
+        'lock_tables' => false,
+        'add_drop_table' => true,
+        'add_locks' => true,
+        'comments' => true,
+        'create_options' => true,
+        'skip_comments' => false,
+        'skip_extended_insert' => false,
+        'skip_opt' => false,
+        'skip_dump_date' => false,
+        'skip_tz_utc' => false
+    ];
+
+    // Merge das opções com defaults
+    $options = array_merge($defaultOptions, $backupOptions);
+
+    // Adiciona opções baseadas na configuração
+    $optionMessages = [];
+
+    if ($options['single_transaction']) {
+        $command .= ' --single-transaction';
+        $optionMessages[] = "transação única";
+    }
+
+    if ($options['routines']) {
+        $command .= ' --routines';
+        $optionMessages[] = "procedures/functions";
+    }
+
+    if ($options['triggers']) {
+        $command .= ' --triggers';
+        $optionMessages[] = "triggers";
+    }
+
+    if ($options['events']) {
+        $command .= ' --events';
+        $optionMessages[] = "events";
+    }
+
+    if ($options['hex_blob']) {
+        $command .= ' --hex-blob';
+        $optionMessages[] = "blobs em hexadecimal";
+    }
+
+    if ($options['complete_insert']) {
+        $command .= ' --complete-insert';
+        $optionMessages[] = "INSERT completo";
+    }
+
+    if (!$options['lock_tables']) {
+        $command .= ' --skip-lock-tables';
+    } else {
+        $optionMessages[] = "lock tables";
+    }
+
+    if ($options['add_drop_table']) {
+        $command .= ' --add-drop-table';
+        $optionMessages[] = "DROP TABLE";
+    }
+
+    if ($options['add_locks']) {
+        $command .= ' --add-locks';
+        $optionMessages[] = "LOCK TABLES";
+    }
+
+    if ($options['comments']) {
+        $command .= ' --comments';
+        $optionMessages[] = "comentários";
+    }
+
+    if ($options['create_options']) {
+        $command .= ' --create-options';
+        $optionMessages[] = "opções CREATE";
+    }
+
+    if ($options['skip_comments']) {
+        $command .= ' --skip-comments';
+    }
+
+    if ($options['skip_extended_insert']) {
+        $command .= ' --skip-extended-insert';
+    }
+
+    if ($options['skip_opt']) {
+        $command .= ' --skip-opt';
+    }
+
+    if ($options['skip_dump_date']) {
+        $command .= ' --skip-dump-date';
+    } else {
+        $command .= ' --dump-date';
+        $optionMessages[] = "data no dump";
+    }
+
+    if ($options['skip_tz_utc']) {
+        $command .= ' --skip-tz-utc';
+    } else {
+        $command .= ' --tz-utc';
+        $optionMessages[] = "timezone UTC";
+    }
 
     // Adiciona opções adicionais se suportadas
     if (checkMysqldumpOption($mysqldumpPath, '--column-statistics')) {
         $command .= ' --column-statistics=0';
     }
+
+    // Mostra as opções ativas
+    if (!empty($optionMessages)) {
+        displayMessage("Opções ativas: " . implode(', ', $optionMessages));
+    }
+
+    // Nome do banco
+    $command .= ' ' . escapeshellarg($config['database']);
 
     // Adiciona compressão se disponível
     if ($useCompression) {
@@ -136,10 +266,11 @@ function executeDatabaseBackup($taskName, $config)
     exec($command, $output, $returnCode);
 
     if ($returnCode !== 0) {
-        // Tenta sem algumas opções que podem causar problemas
+        // Tenta com opções reduzidas se falhar
         displayMessage("Tentando com opções reduzidas...", "WARNING");
 
-        $command = sprintf(
+        // Comando básico sem opções avançadas
+        $simpleCommand = sprintf(
             '%s --host=%s --user=%s --password=%s %s',
             escapeshellarg($mysqldumpPath),
             escapeshellarg($config['host']),
@@ -149,14 +280,17 @@ function executeDatabaseBackup($taskName, $config)
         );
 
         if ($useCompression) {
-            $command .= ' 2>/dev/null | ' . escapeshellarg($gzipPath);
+            $simpleCommand .= ' 2>/dev/null | ' . escapeshellarg($gzipPath);
         }
 
-        $command .= ' > ' . escapeshellarg($backupFile);
+        $simpleCommand .= ' > ' . escapeshellarg($backupFile);
 
-        exec($command, $output, $returnCode);
+        exec($simpleCommand, $output, $returnCode);
 
         if ($returnCode !== 0) {
+            // Log do erro detalhado
+            $errorDetails = implode("\n", $output);
+            displayMessage("Detalhes do erro:\n" . $errorDetails, "ERROR");
             throw new Exception("Falha ao executar mysqldump (código: {$returnCode})");
         }
     }
@@ -171,6 +305,28 @@ function executeDatabaseBackup($taskName, $config)
 
     displayMessage("✓ Backup criado: " . basename($backupFile) . " ({$fileSizeFormatted})", "SUCCESS");
 
+    // Registra estatísticas
+    if ($options['routines'] || $options['triggers'] || $options['events']) {
+        $backupContent = $useCompression ?
+            shell_exec('zcat ' . escapeshellarg($backupFile) . ' | head -100') :
+            file_get_contents($backupFile, false, null, 0, 5000);
+
+        $stats = [];
+        if ($options['routines'] && preg_match('/CREATE.*(PROCEDURE|FUNCTION)/i', $backupContent)) {
+            $stats[] = "procedures/functions";
+        }
+        if ($options['triggers'] && preg_match('/CREATE.*TRIGGER/i', $backupContent)) {
+            $stats[] = "triggers";
+        }
+        if ($options['events'] && preg_match('/CREATE.*EVENT/i', $backupContent)) {
+            $stats[] = "events";
+        }
+
+        if (!empty($stats)) {
+            displayMessage("✓ Inclui: " . implode(', ', $stats), "INFO");
+        }
+    }
+
     // Rotaciona backups antigos com configuração individual
     $deletedCount = rotateBackups($backupDir, $safeDbName, $retentionDays, $minBackups);
 
@@ -183,7 +339,8 @@ function executeDatabaseBackup($taskName, $config)
         'backup_file' => $backupFile,
         'file_size' => $fileSize,
         'file_size_formatted' => $fileSizeFormatted,
-        'compressed' => $useCompression
+        'compressed' => $useCompression,
+        'options' => $options
     ];
 }
 
@@ -238,7 +395,105 @@ function executeDatabaseBackupPHP($taskName, $config, $backupDir = null)
         throw new Exception("Não foi possível criar arquivo: {$backupFile}");
     }
 
-    // Obtém todas as tabelas
+    // Opções de backup configuráveis
+    $backupOptions = isset($config['backup_options']) ? $config['backup_options'] : [];
+    $options = array_merge([
+        'routines' => true,
+        'triggers' => true,
+        'events' => true
+    ], $backupOptions);
+
+    // Mostra opções ativas
+    $optionMessages = [];
+    if ($options['routines']) $optionMessages[] = "procedures/functions";
+    if ($options['triggers']) $optionMessages[] = "triggers";
+    if ($options['events']) $optionMessages[] = "events";
+
+    if (!empty($optionMessages)) {
+        displayMessage("Opções ativas: " . implode(', ', $optionMessages));
+    }
+
+    // Escreve informações do backup
+    fwrite($handle, "-- Backup gerado por tasks.php (PHP backup)\n");
+    fwrite($handle, "-- Data: " . date('Y-m-d H:i:s') . "\n");
+    fwrite($handle, "-- Banco: " . $config['database'] . "\n");
+    fwrite($handle, "-- Host: " . $config['host'] . "\n\n");
+    fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n\n");
+    fwrite($handle, "SET NAMES utf8mb4;\n\n");
+    fwrite($handle, "SET TIME_ZONE='+00:00';\n\n");
+
+    // 1. Exporta eventos (se habilitado)
+    if ($options['events']) {
+        displayMessage("Exportando eventos...");
+        $eventsResult = $mysqli->query("SHOW EVENTS");
+        if ($eventsResult && $eventsResult->num_rows > 0) {
+            fwrite($handle, "--\n");
+            fwrite($handle, "-- Eventos\n");
+            fwrite($handle, "--\n\n");
+
+            while ($event = $eventsResult->fetch_assoc()) {
+                $eventName = $event['Name'];
+                $createResult = $mysqli->query("SHOW CREATE EVENT `{$eventName}`");
+                if ($createResult) {
+                    $createRow = $createResult->fetch_assoc();
+                    fwrite($handle, "DROP EVENT IF EXISTS `{$eventName}`;\n");
+                    fwrite($handle, $createRow['Create Event'] . ";\n\n");
+                    $createResult->free();
+                }
+            }
+            fwrite($handle, "\n");
+        }
+        if ($eventsResult) $eventsResult->free();
+    }
+
+    // 2. Exporta procedures e functions (se habilitado)
+    if ($options['routines']) {
+        displayMessage("Exportando procedures e functions...");
+
+        // Procedures
+        $proceduresResult = $mysqli->query("SHOW PROCEDURE STATUS WHERE Db = '" . $mysqli->real_escape_string($config['database']) . "'");
+        if ($proceduresResult && $proceduresResult->num_rows > 0) {
+            fwrite($handle, "--\n");
+            fwrite($handle, "-- Procedures\n");
+            fwrite($handle, "--\n\n");
+
+            while ($proc = $proceduresResult->fetch_assoc()) {
+                $procName = $proc['Name'];
+                $createResult = $mysqli->query("SHOW CREATE PROCEDURE `{$procName}`");
+                if ($createResult) {
+                    $createRow = $createResult->fetch_assoc();
+                    fwrite($handle, "DROP PROCEDURE IF EXISTS `{$procName}`;\n");
+                    fwrite($handle, $createRow['Create Procedure'] . ";\n\n");
+                    $createResult->free();
+                }
+            }
+            fwrite($handle, "\n");
+        }
+        if ($proceduresResult) $proceduresResult->free();
+
+        // Functions
+        $functionsResult = $mysqli->query("SHOW FUNCTION STATUS WHERE Db = '" . $mysqli->real_escape_string($config['database']) . "'");
+        if ($functionsResult && $functionsResult->num_rows > 0) {
+            fwrite($handle, "--\n");
+            fwrite($handle, "-- Functions\n");
+            fwrite($handle, "--\n\n");
+
+            while ($func = $functionsResult->fetch_assoc()) {
+                $funcName = $func['Name'];
+                $createResult = $mysqli->query("SHOW CREATE FUNCTION `{$funcName}`");
+                if ($createResult) {
+                    $createRow = $createResult->fetch_assoc();
+                    fwrite($handle, "DROP FUNCTION IF EXISTS `{$funcName}`;\n");
+                    fwrite($handle, $createRow['Create Function'] . ";\n\n");
+                    $createResult->free();
+                }
+            }
+            fwrite($handle, "\n");
+        }
+        if ($functionsResult) $functionsResult->free();
+    }
+
+    // 3. Obtém todas as tabelas
     $tables = [];
     $result = $mysqli->query('SHOW TABLES');
     if ($result) {
@@ -252,92 +507,104 @@ function executeDatabaseBackupPHP($taskName, $config, $backupDir = null)
     }
 
     if (empty($tables)) {
-        fclose($handle);
-        $mysqli->close();
         displayMessage("Aviso: Nenhuma tabela encontrada no banco de dados.", "WARNING");
-        return true; // Não é erro, apenas banco vazio
-    }
+    } else {
+        displayMessage("Exportando " . count($tables) . " tabelas...");
 
-    displayMessage("Exportando " . count($tables) . " tabelas...");
+        // Exporta cada tabela
+        foreach ($tables as $table) {
+            displayMessage("  Exportando tabela: {$table}");
 
-    // Escreve informações do backup
-    fwrite($handle, "-- Backup gerado por tasks.php\n");
-    fwrite($handle, "-- Data: " . date('Y-m-d H:i:s') . "\n");
-    fwrite($handle, "-- Banco: " . $config['database'] . "\n");
-    fwrite($handle, "-- Host: " . $config['host'] . "\n\n");
-    fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n\n");
-    fwrite($handle, "SET NAMES utf8mb4;\n\n");
-
-    // Exporta cada tabela
-    foreach ($tables as $table) {
-        displayMessage("  Exportando tabela: {$table}");
-
-        // Exporta estrutura da tabela
-        $result = $mysqli->query("SHOW CREATE TABLE `{$table}`");
-        if ($result) {
-            $row = $result->fetch_assoc();
-            fwrite($handle, "--\n");
-            fwrite($handle, "-- Estrutura da tabela `{$table}`\n");
-            fwrite($handle, "--\n\n");
-            fwrite($handle, "DROP TABLE IF EXISTS `{$table}`;\n");
-            fwrite($handle, $row['Create Table'] . ";\n\n");
-            $result->free();
-        } else {
-            displayMessage("  Aviso: Não foi possível obter estrutura da tabela {$table}", "WARNING");
-            continue;
-        }
-
-        // Exporta dados da tabela
-        $result = $mysqli->query("SELECT * FROM `{$table}`");
-        if ($result) {
-            if ($result->num_rows > 0) {
+            // Exporta estrutura da tabela
+            $result = $mysqli->query("SHOW CREATE TABLE `{$table}`");
+            if ($result) {
+                $row = $result->fetch_assoc();
                 fwrite($handle, "--\n");
-                fwrite($handle, "-- Dados da tabela `{$table}`\n");
+                fwrite($handle, "-- Estrutura da tabela `{$table}`\n");
                 fwrite($handle, "--\n\n");
+                fwrite($handle, "DROP TABLE IF EXISTS `{$table}`;\n");
+                fwrite($handle, $row['Create Table'] . ";\n\n");
+                $result->free();
+            } else {
+                displayMessage("  Aviso: Não foi possível obter estrutura da tabela {$table}", "WARNING");
+                continue;
+            }
 
-                // Obtém informações das colunas
-                $columnsInfo = [];
-                $fieldsResult = $mysqli->query("SHOW COLUMNS FROM `{$table}`");
-                if ($fieldsResult) {
-                    while ($fieldRow = $fieldsResult->fetch_assoc()) {
-                        $columnsInfo[$fieldRow['Field']] = $fieldRow;
-                    }
-                    $fieldsResult->free();
-                }
+            // Exporta triggers da tabela (se habilitado)
+            if ($options['triggers']) {
+                $triggersResult = $mysqli->query("SHOW TRIGGERS LIKE '" . $mysqli->real_escape_string($table) . "'");
+                if ($triggersResult && $triggersResult->num_rows > 0) {
+                    fwrite($handle, "--\n");
+                    fwrite($handle, "-- Triggers da tabela `{$table}`\n");
+                    fwrite($handle, "--\n\n");
 
-                // Exporta cada linha
-                while ($row = $result->fetch_assoc()) {
-                    $values = [];
-                    foreach ($row as $column => $value) {
-                        // Verifica se o valor é NULL
-                        if ($value === null) {
-                            $values[] = 'NULL';
-                        } else {
-                            // Escapa o valor, tratando tipos especiais
-                            $escapedValue = $mysqli->real_escape_string((string)$value);
-
-                            // Verifica se a coluna é numérica para não usar aspas
-                            $columnType = strtolower($columnsInfo[$column]['Type'] ?? '');
-                            $isNumeric = preg_match('/(int|decimal|float|double|bit|bool)/', $columnType);
-
-                            if ($isNumeric && is_numeric($value)) {
-                                $values[] = $value;
-                            } else {
-                                $values[] = "'{$escapedValue}'";
-                            }
+                    while ($trigger = $triggersResult->fetch_assoc()) {
+                        $triggerName = $trigger['Trigger'];
+                        $createResult = $mysqli->query("SHOW CREATE TRIGGER `{$triggerName}`");
+                        if ($createResult) {
+                            $createRow = $createResult->fetch_assoc();
+                            fwrite($handle, "DROP TRIGGER IF EXISTS `{$triggerName}`;\n");
+                            fwrite($handle, $createRow['SQL Original Statement'] . ";\n\n");
+                            $createResult->free();
                         }
                     }
-
-                    fwrite($handle, "INSERT INTO `{$table}` VALUES (" . implode(', ', $values) . ");\n");
+                    fwrite($handle, "\n");
                 }
-
-                fwrite($handle, "\n");
-            } else {
-                fwrite($handle, "-- Tabela `{$table}` está vazia\n\n");
+                if ($triggersResult) $triggersResult->free();
             }
-            $result->free();
-        } else {
-            displayMessage("  Aviso: Não foi possível exportar dados da tabela {$table}", "WARNING");
+
+            // Exporta dados da tabela
+            $result = $mysqli->query("SELECT * FROM `{$table}`");
+            if ($result) {
+                if ($result->num_rows > 0) {
+                    fwrite($handle, "--\n");
+                    fwrite($handle, "-- Dados da tabela `{$table}`\n");
+                    fwrite($handle, "--\n\n");
+
+                    // Obtém informações das colunas
+                    $columnsInfo = [];
+                    $fieldsResult = $mysqli->query("SHOW COLUMNS FROM `{$table}`");
+                    if ($fieldsResult) {
+                        while ($fieldRow = $fieldsResult->fetch_assoc()) {
+                            $columnsInfo[$fieldRow['Field']] = $fieldRow;
+                        }
+                        $fieldsResult->free();
+                    }
+
+                    // Exporta cada linha
+                    while ($row = $result->fetch_assoc()) {
+                        $values = [];
+                        foreach ($row as $column => $value) {
+                            // Verifica se o valor é NULL
+                            if ($value === null) {
+                                $values[] = 'NULL';
+                            } else {
+                                // Escapa o valor, tratando tipos especiais
+                                $escapedValue = $mysqli->real_escape_string((string)$value);
+
+                                // Verifica se a coluna é numérica para não usar aspas
+                                $columnType = strtolower($columnsInfo[$column]['Type'] ?? '');
+                                $isNumeric = preg_match('/(int|decimal|float|double|bit|bool)/', $columnType);
+
+                                if ($isNumeric && is_numeric($value)) {
+                                    $values[] = $value;
+                                } else {
+                                    $values[] = "'{$escapedValue}'";
+                                }
+                            }
+                        }
+
+                        fwrite($handle, "INSERT INTO `{$table}` VALUES (" . implode(', ', $values) . ");\n");
+                    }
+
+                    fwrite($handle, "\n");
+                } else {
+                    fwrite($handle, "-- Tabela `{$table}` está vazia\n\n");
+                }
+                $result->free();
+            } else {
+                displayMessage("  Aviso: Não foi possível exportar dados da tabela {$table}", "WARNING");
+            }
         }
     }
 
@@ -380,7 +647,8 @@ function executeDatabaseBackupPHP($taskName, $config, $backupDir = null)
         'backup_file' => $backupFile,
         'file_size' => $fileSize,
         'file_size_formatted' => $fileSizeFormatted,
-        'compressed' => $compressed
+        'compressed' => $compressed,
+        'options' => $options
     ];
 }
 
