@@ -124,6 +124,7 @@ $logger->sendImmediate("🚀 *Iniciando backup: {$params['task']}*");
 $startTime = microtime(true);
 $backupInfo = null;
 $logger->sendImmediate("🚀 *exe0*");
+$logger->sendSuccess($params['task'], "10:10", "testre");
 try {
     $logger->sendImmediate("🚀 *exe1*");
     $result = executeTask($params['task'], $taskConfig);
