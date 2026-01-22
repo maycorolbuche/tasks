@@ -15,9 +15,10 @@ if (php_sapi_name() !== 'cli') {
     die("Este script deve ser executado apenas via linha de comando.\n");
 }
 
-// Inclui o arquivo de funções
+// Inclui os arquivos de funções
 require_once __DIR__ . '/includes/functions.php';
-require_once __DIR__ . '/includes/tasks.php';
+require_once __DIR__ . '/includes/logger.php';
+require_once __DIR__ . '/includes/backup.database.php';
 
 // Processa os argumentos
 $params = parseArguments($argv);
@@ -131,8 +132,6 @@ try {
     // Envia todas as mensagens pendentes
     $logger->flushBuffer();
 
-    file_put_contents("teste.txt", json_encode($result));
-
     if ($result) {
         // Se temos informações do backup
         if (is_array($result) && isset($result['backup_file'])) {
@@ -167,4 +166,26 @@ try {
     echo "   {$e->getMessage()}\n";
     echo "   ⏱️ Tempo de execução: {$executionTime}s\n";
     exit(1);
+}
+
+
+
+
+/**
+ * Executa uma tarefa baseada na configuração
+ */
+function executeTask($taskName, $taskConfig)
+{
+    displayMessage("Iniciando tarefa: {$taskName}");
+
+    // Determina o tipo de tarefa
+    $taskType = $taskConfig['task'];
+
+    switch ($taskType) {
+        case 'backup.database':
+            return executeDatabaseBackup($taskName, $taskConfig);
+
+        default:
+            throw new Exception("Tipo de tarefa não suportado: {$taskType}");
+    }
 }

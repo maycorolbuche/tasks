@@ -1,27 +1,8 @@
 <?php
 
 /**
- * Implementação das tarefas
+ * Funções específicas para operações de backup
  */
-
-/**
- * Executa uma tarefa baseada na configuração
- */
-function executeTask($taskName, $taskConfig)
-{
-    displayMessage("Iniciando tarefa: {$taskName}");
-
-    // Determina o tipo de tarefa
-    $taskType = $taskConfig['task'];
-
-    switch ($taskType) {
-        case 'backup.database':
-            return executeDatabaseBackup($taskName, $taskConfig);
-
-        default:
-            throw new Exception("Tipo de tarefa não suportado: {$taskType}");
-    }
-}
 
 /**
  * Executa backup de banco de dados MySQL
@@ -654,12 +635,6 @@ function executeDatabaseBackupPHP($taskName, $config, $backupDir = null)
 
 /**
  * Rotaciona backups mantendo apenas os mais recentes
- * 
- * @param string $backupDir Diretório dos backups
- * @param string $filePrefix Prefixo dos arquivos (ex: nome_do_banco)
- * @param int $keepDays Número de dias para manter (padrão: 30)
- * @param int $keepMinNumber Número mínimo de backups a manter (mesmo se mais antigos)
- * @return int Número de arquivos deletados
  */
 function rotateBackups($backupDir, $filePrefix, $keepDays = 30, $keepMinNumber = 1)
 {
